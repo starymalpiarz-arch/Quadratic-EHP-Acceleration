@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quadratic EHP Acceleration – Damage Reduction Analysis</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --tangent: #f43f5e;
+      --point-highlight: #fbbf24;
+      --success: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 24px 16px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #ffffff;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    /* Metric Cards */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+
+    .metric-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .metric-value.accent { color: var(--accent); }
+    .metric-value.tangent { color: var(--tangent); }
+    .metric-value.success { color: var(--success); }
+
+    .metric-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Controls Panel */
+    .controls-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .slider-title {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .slider-readout {
+      font-weight: 700;
+      color: var(--accent);
+      font-size: 1.1rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      background: #0f172a;
+      border-radius: 6px;
+      outline: none;
+      -webkit-appearance: none;
+      margin-bottom: 18px;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 3px solid #ffffff;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .preset-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button.preset-btn, button.export-btn {
+      background: #0f172a;
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    button.preset-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    button.preset-btn.active {
+      background: var(--accent);
+      color: #0f172a;
+      border-color: var(--accent);
+    }
+
+    button.export-btn {
+      background: #334155;
+      border-color: #475569;
+    }
+
+    button.export-btn:hover {
+      background: #475569;
+    }
+
+    .toggles-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    label.toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .hp-input-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .hp-input-group input {
+      width: 90px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--card-border);
+      background: #0f172a;
+      color: var(--text-main);
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* Chart Container */
+    .chart-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    canvas {
+      width: 100%;
+      height: 440px;
+      display: block;
+      cursor: crosshair;
+    }
+
+    .chart-legend {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 12px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-swatch {
+      width: 16px;
+      height: 4px;
+      border-radius: 2px;
+    }
+
+    /* Explanation & Table Section */
+    .explanation-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .explanation-card h2 {
+      font-size: 1.25rem;
+      margin-bottom: 12px;
+      color: #ffffff;
+    }
+
+    .explanation-card p {
+      margin-bottom: 14px;
+      color: #cbd5e1;
+    }
+
+    .formula-box {
+      background: #0f172a;
+      border-left: 4px solid var(--accent);
+      padding: 14px 18px;
+      border-radius: 6px;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 1.05rem;
+      margin-bottom: 18px;
+      color: var(--accent);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    th {
+      color: var(--text-muted);
+      font-weight: 600;
+      background: rgba(15, 23, 42, 0.5);
+    }
+
+    tr.highlight-row {
+      background: rgba(56, 189, 248, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Quadratic EHP Acceleration (Derivative of Survivability)</h1>
+      <p class="subtitle">
+        Interactive visualization of Effective Health Pool (EHP) multiplier <strong>M(R) = 1 / (1 - R)</strong> and its derivative <strong>M'(R) = [M(R)]²</strong>
+      </p>
+    </header>
+
+    <!-- Live Metric Cards -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Survivability Multiplier M(R)</div>
+        <div class="metric-value accent" id="val-m">6.67×</div>
+        <div class="metric-sub" id="sub-damage">Damage taken: 15.0%</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">Slope / Derivative M'(R) = M²</div>
+        <div class="metric-value tangent" id="val-deriv">44.44×</div>
+        <div class="metric-sub">Growth speed vs. 0% reduction</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">Total Effective HP (EHP)</div>
+        <div class="metric-value success" id="val-ehp">149,413</div>
+        <div class="metric-sub" id="sub-base-hp">From 22,412 Base HP</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">EHP Gain per +0.1% Reduction</div>
+        <div class="metric-value" id="val-gain">+996.1 EHP</div>
+        <div class="metric-sub" id="sub-gain-comp">vs. +22.4 EHP at 0% reduction</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-card">
+      <div class="slider-header">
+        <span class="slider-title">Damage Reduction (R):</span>
+        <span class="slider-readout" id="slider-label">85% (R = 0.85)</span>
+      </div>
+
+      <input type="range" id="r-slider" min="0" max="90" step="0.5" value="85" />
+
+      <div class="toolbar">
+        <div class="preset-group">
+          <button class="preset-btn" data-val="0">Start: 0% (M = 1×)</button>
+          <button class="preset-btn" data-val="50">50% (M = 2×)</button>
+          <button class="preset-btn" data-val="75">75% (M = 4×)</button>
+          <button class="preset-btn active" data-val="85">85% (M = 6.67×)</button>
+        </div>
+
+        <div class="toggles-group">
+          <label class="toggle-label">
+            <input type="checkbox" id="toggle-tangent" checked />
+            Show Tangent Line (Derivative M')
+          </label>
+
+          <div class="hp-input-group">
+            <label for="base-hp-input">Base HP:</label>
+            <input type="number" id="base-hp-input" value="22412" min="1" step="100" />
+          </div>
+
+          <button class="export-btn" id="download-png-btn" title="Save chart image for Google Docs">
+            Download PNG
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive Canvas Chart -->
+    <div class="chart-card">
+      <canvas id="ehp-canvas"></canvas>
+      <div class="chart-legend">
+        <div class="legend-item">
+          <span class="legend-swatch" style="background: #38bdf8;"></span>
+          <span>Multiplier Curve M(R) = 1 / (1 - R)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-swatch" style="background: #f43f5e;"></span>
+          <span>Tangent Slope M'(R) = [M(R)]²</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-swatch" style="background: #fbbf24; width: 10px; height: 10px; border-radius: 50%;"></span>
+          <span>Key Thresholds (0%, 50%, 75%, 85%)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mathematical Summary -->
+    <div class="explanation-card">
+      <h2>Mathematical Explanation</h2>
+      <p>
+        By calculating the derivative of the survivability multiplier function <strong>M(R)</strong> with respect to damage reduction <strong>R</strong>, we measure how steep the curve is at any given point:
+      </p>
+      <div class="formula-box">
+        M'(R) = d/dR [ 1 / (1 - R) ] = 1 / (1 - R)² = [ M(R) ]²
+      </div>
+      <p>
+        <strong>The rate of survivability growth scales with the square of your current multiplier!</strong>
+        With a base health pool of <strong>22,412 HP</strong>:
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Damage Reduction (R)</th>
+            <th>Damage Taken (1 - R)</th>
+            <th>Multiplier M(R)</th>
+            <th>Total EHP</th>
+            <th>Derivative M'(R) = M²</th>
+            <th>EHP Gain per +0.1% R</th>
+          </tr>
+        </thead>
+        <tbody id="summary-table-body">
+          <!-- Populated dynamically by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const slider = document.getElementById('r-slider');
+    const sliderLabel = document.getElementById('slider-label');
+    const valM = document.getElementById('val-m');
+    const subDamage = document.getElementById('sub-damage');
+    const valDeriv = document.getElementById('val-deriv');
+    const valEhp = document.getElementById('val-ehp');
+    const subBaseHp = document.getElementById('sub-base-hp');
+    const valGain = document.getElementById('val-gain');
+    const subGainComp = document.getElementById('sub-gain-comp');
+    const toggleTangent = document.getElementById('toggle-tangent');
+    const baseHpInput = document.getElementById('base-hp-input');
+    const presetButtons = document.querySelectorAll('.preset-btn');
+    const downloadBtn = document.getElementById('download-png-btn');
+    const tableBody = document.getElementById('summary-table-body');
+    const canvas = document.getElementById('ehp-canvas');
+    const ctx = canvas.getContext('2d');
+
+    const KEY_THRESHOLDS = [0, 50, 75, 85];
+    const MAX_R_PERCENT = 90;
+    const MAX_Y_MULTIPLIER = 11;
+
+    function formatNum(num, decimals = 0) {
+      return num.toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function updateTable(currentRPercent, baseHp) {
+      tableBody.innerHTML = '';
+      KEY_THRESHOLDS.forEach(pct => {
+        const r = pct / 100;
+        const m = 1 / (1 - r);
+        const deriv = m * m;
+        const ehp = baseHp * m;
+        const gainPer01Pct = baseHp * deriv * 0.001;
+
+        const tr = document.createElement('tr');
+        if (Math.abs(currentRPercent - pct) < 0.25) {
+          tr.className = 'highlight-row';
+        }
+
+        tr.innerHTML = `
+          <td><strong>${pct}%</strong> ${pct === 0 ? '(Start)' : ''}</td>
+          <td>${formatNum((1 - r) * 100, 0)}%</td>
+          <td>${formatNum(m, pct === 85 ? 2 : 0)}×</td>
+          <td><strong>${formatNum(ehp, 0)} EHP</strong></td>
+          <td><strong>${formatNum(deriv, pct === 85 ? 2 : 0)}×</strong> faster</td>
+          <td>+${formatNum(gainPer01Pct, 1)} EHP</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    function drawChart() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.save();
+      ctx.scale(dpr, dpr);
+
+      const width = rect.width;
+      const height = rect.height;
+      const pad = { top: 28, right: 90, bottom: 48, left: 60 };
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+
+      const rPercent = parseFloat(slider.value);
+      const r = rPercent / 100;
+      const baseHp = parseFloat(baseHpInput.value) || 22412;
+
+      const m = 1 / (1 - r);
+      const deriv = m * m;
+      const ehp = baseHp * m;
+      const startGain = baseHp * 0.001;
+      const currentGain = baseHp * deriv * 0.001;
+
+      // Update UI Cards
+      sliderLabel.textContent = `${formatNum(rPercent, rPercent % 1 === 0 ? 0 : 1)}% (R = ${r.toFixed(3).replace(/0+$/, '').replace(/\.$/, '')})`;
+      valM.textContent = `${formatNum(m, 2)}×`;
+      subDamage.textContent = `Damage taken: ${formatNum((1 - r) * 100, 1)}%`;
+      valDeriv.textContent = `${formatNum(deriv, 2)}×`;
+      valEhp.textContent = formatNum(ehp, 0);
+      subBaseHp.textContent = `From ${formatNum(baseHp, 0)} Base HP`;
+      valGain.textContent = `+${formatNum(currentGain, 1)} EHP`;
+      subGainComp.textContent = `vs. +${formatNum(startGain, 1)} EHP at 0% reduction`;
+
+      presetButtons.forEach(btn => {
+        const val = parseFloat(btn.getAttribute('data-val'));
+        btn.classList.toggle('active', Math.abs(val - rPercent) < 0.1);
+      });
+
+      updateTable(rPercent, baseHp);
+
+      // Coordinate Mappers
+      const xToPx = (pct) => pad.left + (pct / MAX_R_PERCENT) * plotW;
+      const yToPx = (mult) => pad.top + plotH - ((mult - 1) / (MAX_Y_MULTIPLIER - 1)) * plotH;
+
+      // Background
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, 0, width, height);
+
+      // Grid lines & Axes
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1;
+      ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.fillStyle = '#94a3b8';
+
+      // Horizontal Grid (Multiplier & EHP)
+      const ySteps = [1, 2, 4, 6, 8, 10];
+      ySteps.forEach(mult => {
+        const y = yToPx(mult);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(pad.left + plotW, y);
+        ctx.stroke();
+
+        // Left Axis: Multiplier M
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${mult}×`, pad.left - 10, y);
+
+        // Right Axis: EHP
+        ctx.textAlign = 'left';
+        ctx.fillText(`${formatNum( Math.round((baseHp * mult) / 1000), 0 )}k EHP`, pad.left + plotW + 10, y);
+      });
+
+      // Vertical Grid (Reduction %)
+      const xSteps = [0, 15, 30, 50, 60, 75, 85, 90];
+      xSteps.forEach(pct => {
+        const x = xToPx(pct);
+        ctx.beginPath();
+        ctx.moveTo(x, pad.top);
+        ctx.lineTo(x, pad.top + plotH);
+        ctx.stroke();
+
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(`${pct}%`, x, pad.top + plotH + 10);
+      });
+
+      // Axis Titles
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Damage Reduction R (%)', pad.left + plotW / 2, height - 14);
+
+      ctx.save();
+      ctx.translate(18, pad.top + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText('Survivability Multiplier M(R)', 0, 0);
+      ctx.restore();
+
+      // Clip to Plot Area for Curves
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(pad.left, pad.top, plotW, plotH);
+      ctx.clip();
+
+      // Shaded Area under M(R) up to selected R
+      ctx.beginPath();
+      ctx.moveTo(xToPx(0), yToPx(1));
+      for (let pct = 0; pct <= rPercent; pct += 0.5) {
+        const curM = 1 / (1 - pct / 100);
+        ctx.lineTo(xToPx(pct), yToPx(curM));
+      }
+      ctx.lineTo(xToPx(rPercent), yToPx(1));
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotH);
+      grad.addColorStop(0, 'rgba(56, 189, 248, 0.28)');
+      grad.addColorStop(1, 'rgba(56, 189, 248, 0.02)');
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Main Curve M(R) = 1 / (1 - R)
+      ctx.beginPath();
+      for (let pct = 0; pct <= MAX_R_PERCENT; pct += 0.25) {
+        const curM = 1 / (1 - pct / 100);
+        const px = xToPx(pct);
+        const py = yToPx(curM);
+        if (pct === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Tangent Line: y(x) = M(R0) + M'(R0) * ((x - R0_pct)/100)
+      if (toggleTangent.checked) {
+        ctx.beginPath();
+        const spanPct = 22;
+        const startPct = Math.max(0, rPercent - spanPct);
+        const endPct = Math.min(MAX_R_PERCENT, rPercent + spanPct);
+
+        const mStart = m + deriv * ((startPct - rPercent) / 100);
+        const mEnd = m + deriv * ((endPct - rPercent) / 100);
+
+        ctx.moveTo(xToPx(startPct), yToPx(mStart));
+        ctx.lineTo(xToPx(endPct), yToPx(mEnd));
+        ctx.strokeStyle = '#f43f5e';
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([6, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      ctx.restore(); // Remove clip
+
+      // Draw Key Threshold Dots (0%, 50%, 75%, 85%)
+      KEY_THRESHOLDS.forEach(pct => {
+        const thM = 1 / (1 - pct / 100);
+        const px = xToPx(pct);
+        const py = yToPx(thM);
+
+        ctx.beginPath();
+        ctx.arc(px, py, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      });
+
+      // Draw Active Point Marker & Crosshair
+      const activeX = xToPx(rPercent);
+      const activeY = yToPx(m);
+
+      ctx.beginPath();
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = 'rgba(248, 250, 252, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.moveTo(activeX, activeY);
+      ctx.lineTo(activeX, pad.top + plotH);
+      ctx.moveTo(activeX, activeY);
+      ctx.lineTo(pad.left, activeY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.beginPath();
+      ctx.arc(activeX, activeY, 8, 0, Math.PI * 2);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Floating Badge on Active Point
+      const labelText = `R = ${formatNum(rPercent, rPercent % 1 === 0 ? 0 : 1)}% | M = ${formatNum(m, 2)}× | Slope M' = ${formatNum(deriv, 2)}×`;
+      ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      const textW = ctx.measureText(labelText).width + 18;
+      let boxX = activeX - textW / 2;
+      boxX = Math.max(pad.left + 4, Math.min(pad.left + plotW - textW - 4, boxX));
+      const boxY = Math.max(pad.top + 6, activeY - 38);
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(boxX, boxY, textW, 26, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(labelText, boxX + textW / 2, boxY + 13);
+
+      ctx.restore();
+    }
+
+    // Event Listeners
+    slider.addEventListener('input', drawChart);
+    toggleTangent.addEventListener('change', drawChart);
+    baseHpInput.addEventListener('input', drawChart);
+
+    presetButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        slider.value = btn.getAttribute('data-val');
+        drawChart();
+      });
+    });
+
+    // Click or drag directly on canvas to adjust R
+    let isDragging = false;
+    function updateFromMouse(e) {
+      const rect = canvas.getBoundingClientRect();
+      const padLeft = 60;
+      const padRight = 90;
+      const plotW = rect.width - padLeft - padRight;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const relX = clientX - rect.left - padLeft;
+      let pct = (relX / plotW) * MAX_R_PERCENT;
+      pct = Math.max(0, Math.min(MAX_R_PERCENT, Math.round(pct * 2) / 2));
+      slider.value = pct;
+      drawChart();
+    }
+
+    canvas.addEventListener('mousedown', (e) => { isDragging = true; updateFromMouse(e); });
+    window.addEventListener('mousemove', (e) => { if (isDragging) updateFromMouse(e); });
+    window.addEventListener('mouseup', () => { isDragging = false; });
+
+    // Export Canvas as PNG for Google Docs
+    downloadBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = `EHP_Quadratic_Acceleration_R${slider.value}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+
+    window.addEventListener('resize', drawChart);
+    drawChart();
+  </script>
+</body>
+</html>
